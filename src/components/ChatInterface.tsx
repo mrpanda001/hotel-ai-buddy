@@ -12,7 +12,9 @@ import {
   Compass, 
   HelpCircle, 
   Hotel, 
-  MapPin 
+  MapPin,
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -20,14 +22,35 @@ const ChatInterface: React.FC = () => {
   // State for messages and processing status
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   
   // Ref for message container to enable auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isProcessing) {
+      scrollToBottom();
+    }
+  }, [messages, isProcessing]);
+
+  // Show scroll button when not at bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      if (messageContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = messageContainerRef.current;
+        const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+        setShowScrollButton(!isAtBottom);
+      }
+    };
+
+    const messageContainer = messageContainerRef.current;
+    if (messageContainer) {
+      messageContainer.addEventListener('scroll', handleScroll);
+      return () => messageContainer.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
 
   // Function to scroll to the bottom of the message container
   const scrollToBottom = () => {
@@ -80,6 +103,12 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  // Clear chat history
+  const handleClearChat = () => {
+    setMessages([welcomeMessage]);
+    toast.success("Chat history cleared");
+  };
+
   // Quick action buttons for common requests
   const quickActions = [
     { icon: <Coffee size={14} />, text: "Room Service Menu", action: () => handleSendMessage("Show me the room service menu") },
@@ -91,12 +120,15 @@ const ChatInterface: React.FC = () => {
   ];
 
   return (
-    <div className="chat-container">
+    <div className="chat-container h-full flex flex-col">
       {/* Header component */}
       <Header />
       
       {/* Message container */}
-      <div className="message-container">
+      <div 
+        className="message-container flex-grow overflow-y-auto p-4"
+        ref={messageContainerRef}
+      >
         {/* Quick action buttons */}
         <div className="flex flex-wrap gap-2 mb-6 px-2">
           {quickActions.map((action, index) => (
@@ -115,12 +147,40 @@ const ChatInterface: React.FC = () => {
         </div>
         
         {/* Messages */}
-        {messages.map(message => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+        <div className="space-y-6">
+          {messages.map(message => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
+        </div>
         
         {/* Empty div for scrolling to bottom */}
         <div ref={messagesEndRef} />
+      </div>
+
+      {/* Utility buttons */}
+      <div className="px-4 pt-2 pb-2 flex justify-end border-t border-gray-100">
+        <Button
+          variant="ghost" 
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+          onClick={handleClearChat}
+          disabled={messages.length <= 1 || isProcessing}
+        >
+          <Trash2 size={16} className="mr-1" />
+          Clear chat
+        </Button>
+        
+        {showScrollButton && (
+          <Button
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-500 hover:text-gray-700"
+            onClick={scrollToBottom}
+          >
+            <RefreshCw size={16} className="mr-1" />
+            Latest messages
+          </Button>
+        )}
       </div>
       
       {/* Chat input */}

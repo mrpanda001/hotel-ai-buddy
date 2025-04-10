@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Header from "./Header";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
+import ApiKeyModal from "./ApiKeyModal";
 import { processMessage, Message } from "../services/chatService";
 import { welcomeMessage } from "../utils/mockData";
 import { toast } from "sonner";
@@ -14,7 +15,8 @@ import {
   Hotel, 
   MapPin,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,10 +25,20 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   
   // Ref for message container to enable auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check if API key exists on mount
+  useEffect(() => {
+    const apiKey = localStorage.getItem("perplexity_api_key");
+    if (!apiKey) {
+      // Show API key modal on first load if no key exists
+      setShowApiKeyModal(true);
+    }
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -109,6 +121,11 @@ const ChatInterface: React.FC = () => {
     toast.success("Chat history cleared");
   };
 
+  // Handle opening API key modal
+  const handleOpenApiModal = () => {
+    setShowApiKeyModal(true);
+  };
+
   // Quick action buttons for common requests
   const quickActions = [
     { icon: <Coffee size={14} />, text: "Room Service Menu", action: () => handleSendMessage("Show me the room service menu") },
@@ -158,33 +175,51 @@ const ChatInterface: React.FC = () => {
       </div>
 
       {/* Utility buttons */}
-      <div className="px-4 pt-2 pb-2 flex justify-end border-t border-gray-100">
+      <div className="px-4 pt-2 pb-2 flex justify-between border-t border-gray-100">
         <Button
           variant="ghost" 
           size="sm"
           className="text-gray-500 hover:text-gray-700"
-          onClick={handleClearChat}
-          disabled={messages.length <= 1 || isProcessing}
+          onClick={handleOpenApiModal}
         >
-          <Trash2 size={16} className="mr-1" />
-          Clear chat
+          <Settings size={16} className="mr-1" />
+          API Settings
         </Button>
         
-        {showScrollButton && (
+        <div className="flex space-x-2">
           <Button
             variant="ghost" 
-            size="sm" 
+            size="sm"
             className="text-gray-500 hover:text-gray-700"
-            onClick={scrollToBottom}
+            onClick={handleClearChat}
+            disabled={messages.length <= 1 || isProcessing}
           >
-            <RefreshCw size={16} className="mr-1" />
-            Latest messages
+            <Trash2 size={16} className="mr-1" />
+            Clear chat
           </Button>
-        )}
+          
+          {showScrollButton && (
+            <Button
+              variant="ghost" 
+              size="sm" 
+              className="text-gray-500 hover:text-gray-700"
+              onClick={scrollToBottom}
+            >
+              <RefreshCw size={16} className="mr-1" />
+              Latest messages
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Chat input */}
       <ChatInput onSendMessage={handleSendMessage} isProcessing={isProcessing} />
+      
+      {/* API Key Modal */}
+      <ApiKeyModal 
+        isOpen={showApiKeyModal} 
+        onClose={() => setShowApiKeyModal(false)} 
+      />
     </div>
   );
 };

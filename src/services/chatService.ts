@@ -27,10 +27,17 @@ export const processMessage = async (message: string): Promise<Message> => {
   // Convert message to lowercase for easier matching
   const messageLower = message.toLowerCase();
   
-  // Simulate API request delay
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-  
   try {
+    // Check if we should use Perplexity API
+    if (shouldUsePerplexityAPI(messageLower)) {
+      // Use Perplexity API
+      return await getPerplexityResponse(message);
+    }
+    
+    // Otherwise use the mock responses
+    // Simulate API request delay
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+    
     // Determine the category of the message
     const category = determineCategory(messageLower);
     
@@ -54,6 +61,91 @@ export const processMessage = async (message: string): Promise<Message> => {
       content: "I apologize, but I'm having trouble processing your request right now. Please try again or contact the front desk for immediate assistance.",
       timestamp: new Date().toISOString(),
       category: "general"
+    };
+  }
+};
+
+// Determine if we should use Perplexity API based on message complexity
+const shouldUsePerplexityAPI = (message: string): boolean => {
+  // For demonstration, we'll use Perplexity for more complex queries
+  // In a production environment, you might have more sophisticated logic
+  const complexityIndicators = [
+    "why", "how", "compare", "difference", "explain", "recommendation", 
+    "suggest", "best", "when should", "what if", "can you help me decide"
+  ];
+  
+  return complexityIndicators.some(indicator => message.includes(indicator));
+};
+
+// Get response from Perplexity API
+const getPerplexityResponse = async (message: string): Promise<Message> => {
+  try {
+    // In a real implementation, this would come from environment variables or user input
+    const apiKey = localStorage.getItem('perplexity_api_key');
+    
+    if (!apiKey) {
+      throw new Error("Perplexity API key not found");
+    }
+    
+    // Add context about being a hotel concierge
+    const hotelContext = `You are the AI concierge for ${hotel.name}. The hotel offers these amenities: spa, pool, gym, restaurant, and business center. Check-out time is 11:00 AM. Check-in time is 3:00 PM. The hotel is located in downtown Singapore. Respond as a helpful, friendly concierge.`;
+    
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: hotelContext
+          },
+          {
+            role: 'user',
+            content: message
+          }
+        ],
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: 500,
+        return_images: false,
+        return_related_questions: false,
+        search_domain_filter: ['perplexity.ai'],
+        search_recency_filter: 'month',
+        frequency_penalty: 1,
+        presence_penalty: 0
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
+    
+    return {
+      id: generateId(),
+      type: "bot",
+      content: aiResponse,
+      timestamp: new Date().toISOString(),
+      category: "perplexity"
+    };
+  } catch (error) {
+    console.error("Error fetching from Perplexity API:", error);
+    // Fall back to local processing
+    const category = determineCategory(message.toLowerCase());
+    const response = generateResponse(message.toLowerCase(), category);
+    
+    return {
+      id: generateId(),
+      type: "bot",
+      content: response,
+      timestamp: new Date().toISOString(),
+      category
     };
   }
 };

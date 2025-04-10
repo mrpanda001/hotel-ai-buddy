@@ -2,7 +2,7 @@
 import React from "react";
 import { Message } from "../services/chatService";
 import { cn } from "@/lib/utils";
-import { BedDouble, Globe, Hotel, User } from "lucide-react";
+import { BedDouble, Globe, Hotel, User, Brain } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -20,6 +20,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         return <BedDouble className="h-5 w-5 text-white" />;
       case "local-recommendations":
         return <Globe className="h-5 w-5 text-white" />;
+      case "perplexity":
+        return <Brain className="h-5 w-5 text-white" />;
       case "hotel-services":
       case "faq":
         return <Hotel className="h-5 w-5 text-white" />;
@@ -52,7 +54,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       return message.content.split('\n').map((line, i) => (
         <React.Fragment key={i}>
           {line}
-          {i < message.content.split('\n').length - 1 && <br />}
+          {i < message.content.toString().split('\n').length - 1 && <br />}
         </React.Fragment>
       ));
     }

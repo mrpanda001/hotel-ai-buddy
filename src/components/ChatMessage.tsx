@@ -34,6 +34,33 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Helper function to render content
+  const renderContent = () => {
+    // If it's a loading message
+    if (message.isLoading) {
+      return (
+        <div className="typing-indicator px-2">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      );
+    }
+
+    // If content is a string
+    if (typeof message.content === "string") {
+      return message.content.split('\n').map((line, i) => (
+        <React.Fragment key={i}>
+          {line}
+          {i < message.content.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ));
+    }
+
+    // If content is a JSX Element
+    return message.content;
+  };
+
   return (
     <div className={cn(
       "flex gap-3 animate-slide-in",
@@ -56,24 +83,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       )}>
         {/* Message content */}
         <div className="prose prose-sm">
-          {message.isLoading ? (
-            <div className="typing-indicator px-2">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          ) : (
-            typeof message.content === "string" ? (
-              message.content.split('\n').map((line, i) => (
-                <React.Fragment key={i}>
-                  {line}
-                  {i < message.content.split('\n').length - 1 && <br />}
-                </React.Fragment>
-              ))
-            ) : (
-              message.content
-            )
-          )}
+          {renderContent()}
         </div>
         
         {/* Timestamp */}

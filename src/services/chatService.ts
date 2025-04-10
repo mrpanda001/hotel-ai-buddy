@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import {
   hotel,
@@ -11,7 +10,7 @@ import {
 
 export interface Message {
   id: string;
-  type: "user" | "bot";
+  type: "user" | "bot";  // Explicitly define allowed types
   content: string | JSX.Element;
   timestamp: string;
   category?: string;
